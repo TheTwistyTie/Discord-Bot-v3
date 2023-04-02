@@ -1,0 +1,21 @@
+const Sequelize = require("sequelize")
+
+const name = 'blank';
+module.exports = {
+    data: {
+        name: name
+    },
+    initialize(sequelize){
+        return sequelize.define(name, {
+            guildID: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false,
+            },
+            description: Sequelize.TEXT
+        })
+    } 
+}

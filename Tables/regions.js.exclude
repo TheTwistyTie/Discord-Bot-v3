@@ -1,0 +1,65 @@
+const Sequelize = require("sequelize")
+
+const name = 'regions'
+module.exports = {
+    data: {
+        name: name
+    },
+    initialize(sequelize){
+        return sequelize.define(name, {
+            guildID: {
+                type: Sequelize.STRING,
+                allowNull: false
+            },
+            name: {
+                type: Sequelize.STRING,
+                allowNull: false
+            },
+            roleID: {
+                type: Sequelize.STRING,
+                allowNull: false,
+                unique: true
+            }
+        })
+    },
+    classify(database) {
+        Reflect.defineProperty(database[name].prototype, 'add', {
+            value: async entry => {
+                const region = await database[name].findOne({
+                    where: {roleID: entry.roleID}
+                })
+
+                if(region) {
+                    region.name = entry.name
+                    return region.save()
+                }
+
+                return database[name].create({
+                    guildID: entry.guildID,
+                    name: entry.name,
+                    roleID: entry.roleID
+                })
+            }
+        })
+
+        Reflect.defineProperty(database[name].prototype, 'remove', {
+            value: async entry => {
+                const rowCount = database[name].destory({
+                    where: {roleID: entry.roleID}
+                })
+
+                if(rowCount) return rowCount + ' region removed.'
+
+                return 'No regions removed.'
+            }
+        })
+
+        Reflect.defineProperty(database[name].prototype, 'get', {
+            value: async entry => {
+                return await database[name].findAll({
+                    where: {guildID: entry.guildID}
+                })
+            }
+        })
+    }
+}

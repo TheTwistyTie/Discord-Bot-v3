@@ -1,0 +1,56 @@
+const { SlashCommandBuilder, PermissionFlagsBits, roleMention } = require('discord.js');
+const {Genders} = require('../enums');
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('addgender')
+        .setDescription('Add a gender.')
+        .addStringOption(option =>
+            option
+                .setName('gender')
+                .setDescription('The gender you are adding.')
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    async execute(interaction) {
+        const gender = interaction.options.getString('gender');
+        console.log(gender);
+        try {
+            const client = interaction.client;
+            const Gender = await client.database.get(Genders).findOne({
+                where: {guildID: interaction.guild.id, name: gender}
+            })
+
+            if(Gender) {
+                const roles = await interaction.guild.roles.fetch()
+
+                const genderRole = roles.find(role => role.name === gender)
+
+                if(!genderRole) {
+                    const newRole = await interaction.guild.roles.create({
+                        name: gender,
+                        reason: 'Couldnt find saved gender role.'
+                    });
+
+                    return await interaction.reply(`Refreshed ${gender}, <@&${newRole.id}>`);
+                }
+
+                return await interaction.reply(`${region} already exists.`)
+            }
+
+            const newRole = await interaction.guild.roles.create({
+                name: gender,
+                reason: 'Adding new Gender.'
+            })
+
+            client.database.get(Genders).create({
+                guildID: interaction.guild.id,
+                name: gender,
+                roleID: newRole.id
+            })
+
+            return await interaction.reply(`Added ${gender}, <@&${newRole.id}>`);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+} 

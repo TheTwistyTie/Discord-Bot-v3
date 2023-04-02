@@ -1,0 +1,79 @@
+const Sequelize = require("sequelize")
+
+const name = 'resourceRegions'
+module.exports = {
+    data: {
+        name: name
+    },
+    initialize(sequelize){
+        return sequelize.define(name, {
+            guildID: {
+                type: Sequelize.STRING,
+                allowNull: false
+            },
+            resourceID: Sequelize.INTEGER,
+            regionID: Sequelize.INTEGER
+        })
+    },
+    link(database){
+        database[name].belongsTo(database["regions"], { foreignKey: 'regionID', as: 'region'});
+    },
+    classify(database){
+        Reflect.defineProperty(database[name].prototype, 'add', {
+            value: async entry => {
+                const entryItem = await database[name].findOne({
+                    where: {guildID: entry.guildID, resourceID: entry.resourceID, regionID: entry.regionID}
+                });
+
+                if(entryItem){
+                    return entryItem.save();
+                }
+
+                return database[name].create({guildID: entry.guildID, resourceID: entry.resourceID, regionID: entry.regionID});
+            }
+        })
+
+        Reflect.defineProperty(database[name].prototype, 'removeOne', {
+            value: async entry => {
+                const rowCount = await database[name].destroy({
+                    where: {guildID: entry.guildID, resourceID: entry.resourceID, regionID: entry.regionID}
+                });
+
+                if(!rowCount) return 'An error has occured while trying to remove this entry.';
+
+                return rowCount + ' items removed';
+            }
+        })
+
+        Reflect.defineProperty(database[name].prototype, 'removeAll', {
+            value: async entry => {
+                let rowCount = 0;
+                
+                if(entry.resourceID) {
+                    rowcount += await database[name].destroy({
+                        where: {guildID: entry.guildID, resourceID: entry.resourceID}
+                    });
+                }
+
+                if(entry.regionID) {
+                    rowcount += await database[name].destroy({
+                        where: {guildID: entry.guildID, regionID: entry.regionID}
+                    });
+                }
+
+                if(rowCount == 0) return 'An error has occured while trying to remove this entry.';
+
+                return rowCount + ' items removed';
+            }
+        })
+
+        Reflect.defineProperty(database[name].prototype, 'get', {
+            value: entry => {
+                return database[name].findAll({
+                    where: {guildID: entry.guildID, resourceID: entry.resourceID},
+                    include: ['region']
+                })
+            }
+        })
+    }
+}

@@ -5,6 +5,7 @@ const { addResourceType } = require('../../../actions/addResourceType');
 const {DatabaseTables} = require('../../../enums');
 const Sequelize = require('sequelize');
 const { getResourceTypeButtons } = require('../../../shared/getResourceTypeButtons');
+const { viewResources } = require('../../../actions/viewResources');
 const Op = Sequelize.Op;
 
 let canEdit;
@@ -68,7 +69,7 @@ module.exports = {
             return
         }
 
-        let rowsObj = getResourceTypeButtons(resources, resourceTypes)
+        let rowsObj = getResourceTypeButtons(resources, resourceTypes, canEdit)
         let rows = rowsObj.rows
 
         if(canEdit) {
@@ -99,7 +100,15 @@ module.exports = {
         collector.on("collect", async searchInteraction => {
             let kind = searchInteraction.customId;
 
+            if(kind == "addResourceType") {
+                addResourceType(searchInteraction)
+                return
+            }
+
             let filteredResourcesData = rowsObj.sortedResources[kind];
+            console.log(kind)
+            console.log(rowsObj.sortedResources)
+            console.log(filteredResourcesData)
 
             let savedResources = await database.get(DatabaseTables.SavedResources).findAll({
                 where: {guildID: searchInteraction.guild.id, resourceID: {
@@ -110,7 +119,7 @@ module.exports = {
             })
 
             let findButton = new ButtonBuilder()
-                .setCustomId("findResource")
+                .setCustomId("viewResources")
                 .setLabel(`Find ${kind}`)
                 .setStyle(ButtonStyle.Primary)
 
@@ -147,7 +156,8 @@ module.exports = {
                 })
 
                 switch(decisionInteraction.customId) {
-                    case "findResource":
+                    case "viewResources":
+                        viewResources(decisionInteraction, type)
                         break;
                     case "viewSavedResources":
                         break;

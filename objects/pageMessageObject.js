@@ -2,6 +2,7 @@ const { ComponentHandlerType } = require("../enums");
 const { getResourceTags } = require("../shared/getResourceTags");
 const { getShortEmbed } = require("../shared/getShortEmbed");
 const { getSelectComponentHandler } = require("./selectComponentHandler");
+const { getViewResourceComponentHandler } = require("./viewResourceComponetHandler");
 
 let _Resource;
 let _ComponetHandler;
@@ -14,7 +15,6 @@ let Embed;
 
 module.exports = {
     async getMessageObject(resource, componentHandlerType, database, callback) {
-
         _Resource = resource;
         _Database = database;
         _CallBack = callback;
@@ -25,6 +25,9 @@ module.exports = {
         switch (componentHandlerType) {
             case ComponentHandlerType.Select:
                 componentHandler = getSelectComponentHandler(returnObj(), _Resource, _Database)
+                break;
+            case ComponentHandlerType.ViewResources:
+                componentHandler = getViewResourceComponentHandler(returnObj(), _Resource, _Database)
                 break;
             case ComponentHandlerType.Default:
                 componentHandler = null //toDo
@@ -43,7 +46,8 @@ function returnObj(){
         removeMessage: removeMessage,
         setEmbed: setEmbed,
         CallBack: _CallBack,
-        getTags: getTags
+        getTags: getTags,
+        name: _Resource.name
     }
 }
 
@@ -54,7 +58,7 @@ async function getTags() {
 async function addMessage(channel) {
     Message = await channel.send({
         content: `${_Resource.name}:`,
-        components: _ComponetHandler.getComponets(),
+        components: await _ComponetHandler.getComponets(),
         embeds: [Embed]
     })
 
@@ -70,7 +74,7 @@ function removeMessage() {
 async function refreshMessage() {
     if(Message) {
         Message = await Message.edit({
-            components: _ComponetHandler.getComponets(),
+            components: await _ComponetHandler.getComponets(),
             embeds: [Embed]
         })
     }
@@ -79,8 +83,4 @@ async function refreshMessage() {
 function setEmbed(embed) {
     Embed = embed;
     refreshMessage()
-}
-
-function CallBack(value) {
-    _CallBack(value);
 }

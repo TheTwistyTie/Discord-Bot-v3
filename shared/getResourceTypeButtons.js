@@ -2,7 +2,7 @@ const { ActionRowBuilder, ButtonBuilder } = require("@discordjs/builders");
 const { ButtonStyle } = require("discord.js");
 
 module.exports = {
-    getResourceTypeButtons(resources, resourceTypes) {
+    getResourceTypeButtons(resources, resourceTypes, canEdit = false) {
         let sortedResources = {}
         let row = new ActionRowBuilder()
         let rows = []
@@ -18,7 +18,7 @@ module.exports = {
             })
 
             let count = sortedResources[resourceTypes[i].name].length
-            if(count > 0) {
+            if(count > 0 || canEdit) {
                 row.addComponents(
                     new ButtonBuilder()
                         .setCustomId(resourceTypes[i].name)

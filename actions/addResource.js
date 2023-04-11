@@ -535,6 +535,8 @@ async function linkResource(resource, resourceEditInteraction) {
     let linkTypeCollector = linkTypeMessage.createMessageComponentCollector()
 
     linkTypeCollector.on("collect", async linkTypeInteraction => {
+        linkTypeMessage.delete()
+
         let resourceTypeName = linkTypeInteraction.customId;
         let sortedResoruces = buttonRowsObj.sortedResources[resourceTypeName];
 
@@ -544,22 +546,34 @@ async function linkResource(resource, resourceEditInteraction) {
     })
 }
 
-async function SetLink(linkedResource, interaction) {
+async function SetLink(value) {
+    console.log("Setting Link")
+    let linkedResource = value.resource;
+    let interaction = value.interaction;
+
     let database = interaction.client.database;
 
+    console.log("Adding to database")
     let entry = await database.get(DatabaseTables.ResourceLinks).create({
         guildID: Resource.guildID,
         resourceID: Resource.id,
         linkedID: linkedResource.id
     })
 
-    if(entry.length < 0) {
+    if(entry) {
         _PageHandler.removeAllMessages();
         let updateMsg = await interaction.reply({content: "Linked! This wont show here, but it will when you're finding resources.", fetchReply: true})
 
         setTimeout(() => {
+
             updateMsg.delete()
         }, 5000)
+    } else {
+        interaction.reply("Something went wrong. Please try again.")
+
+        setTimeout(() => {
+            interaction.deleteReply()
+        }, 2000)
     }
 }
 

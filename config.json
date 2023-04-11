@@ -1,0 +1,18 @@
+{
+  "token": "MTA2NjE0MTI5NTYxOTM1MDYxOA.Gozd8D.d2GxlItNdMbEBabj8RepHMsHadsqWthL_12ViQ",
+  "clientID": "1066141295619350618",
+  "devGuildID": "979023303916265562",
+  "development": true,
+  "clearDB": false,
+  "lockdown": {
+    "embed": {
+      "title": "Locked down",
+      "description": "This channel is in lockdown, but resources are available in #start-here.",
+      "color": "0x00b22d"
+    },
+    "time": {
+      "lock": "0 0 22 * * *",
+      "unlock": "0 0 10 * * *"
+    }
+  }
+}

@@ -17,6 +17,7 @@ module.exports = {
 
     ComponentHandlerType: {
         Select: "select",
+        ViewResources: "viewResources",
         Default: "default"
     }
 } 

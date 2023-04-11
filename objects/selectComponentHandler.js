@@ -3,20 +3,20 @@ const { ButtonBuilder, ButtonStyle } = require("discord.js");
 const { looseEnd } = require("../shared/looseEnd");
 const { getBaseComponetHandler } = require("./baseComponentHandler");
 
-let MessageHandler;
-let Resource;
-let Collector;
-let Message;
-let BASE;
+let _MessageHandler;
+let _Resource;
+let _Collector;
+let _Message;
+let _BASE;
 
-let toggleAction;
-let toggleActionID;
+let _toggleAction;
+let _toggleActionID;
 
 module.exports = {
     getSelectComponentHandler(messageHandler, resource, database) {
-        BASE = getBaseComponetHandler(messageHandler, resource, database);
-        MessageHandler = messageHandler
-        Resource = resource
+        _BASE = getBaseComponetHandler(messageHandler, resource, database);
+        _MessageHandler = messageHandler
+        _Resource = resource
 
         return {
             createListener: createListener,
@@ -26,9 +26,9 @@ module.exports = {
 }
 
 function createListener(message) {
-    Message = message;
+    _Message = message;
 
-    Collector = BASE.createListener(Message);
+    _Collector = _BASE.createListener(_Message);
     Collect()
 }
 
@@ -38,9 +38,9 @@ function getComponets() {
         .setLabel("Select")
         .setStyle(ButtonStyle.Success)
 
-    let toggleButtonObj = BASE.getToggleButton()
-    toggleAction = toggleButtonObj.action
-    toggleActionID = toggleButtonObj.customId
+    let toggleButtonObj = _BASE.getToggleButton()
+    _toggleAction = toggleButtonObj.action
+    _toggleActionID = toggleButtonObj.customId
 
     let row = new ActionRowBuilder()
         .addComponents(
@@ -52,14 +52,17 @@ function getComponets() {
 }
 
 function Collect() {
-    Collector.on("collect", async collectInteraction => {
-        if(collectInteraction.customId == toggleActionID) {
-            await toggleAction()
+    _Collector.on("collect", async collectInteraction => {
+        if(collectInteraction.customId == _toggleActionID) {
+            await _toggleAction()
             looseEnd(collectInteraction)
         } else {
             switch (collectInteraction.customId) {
                 case "selectResource":
-                    MessageHandler.Callback({Resource, collectInteraction})
+                    _MessageHandler.CallBack({
+                        resource: _Resource,
+                        interaction: collectInteraction
+                    })
                     break;
                 default:
                     looseEnd(collectInteraction)

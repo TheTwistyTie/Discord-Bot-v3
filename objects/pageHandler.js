@@ -47,7 +47,7 @@ let _CurrentTagFilters = []
 let _FilterdResoucreObjs = []
 
 module.exports = {
-    async getPageHandler(Resources, Channel, Database, HandlerType, FilterOptions = {type: false, tags: false,}, CallBack = null) {
+    async getPageHandler(Resources, Channel, Database, HandlerType, FilterOptions = {type: false, tags: false}, CallBack = null) {
         _CallBack = CallBack;
         _Channel = Channel;
         _Database = Database;
@@ -95,6 +95,9 @@ async function showFilters() {
 }
 
 function showResourceMessages() {
+    console.log(_ResourceIndexes.length)
+    console.log(_ResourceIndexes[0])
+    console.log(_ResourceIndexes[_ResourceIndexes.length - 1])
     for(let i = _ResourceIndexes[0]; i <= _ResourceIndexes[_ResourceIndexes.length - 1]; i++) {
         _FilterdResoucreObjs[i].addMessage(_Channel);
     }
@@ -107,8 +110,16 @@ function removeVisibleMessages() {
 }
 
 function removeAllMessages() {
+    if(_FiltersMessage) {
+        _FiltersMessage.delete()
+    }
+
     for(let i = 0; i < _ResourceObjs.length; i++) {
         _ResourceObjs[i].removeMessage();
+    }
+
+    if(_PageButtonsMessage) {
+        _PageButtonsMessage.delete()
     }
 }
 
@@ -119,11 +130,56 @@ async function showPageButtons() {
 
     getPageButtons()
 
-    _PageButtonsMessage = await _Channel.send({
-        content: `${_CurrentPage + 1} of ${_PageCount}`,
-        components: [_PageButtons],
-        fetchReply: true
-    })
+    setTimeout(async () => {
+        _PageButtonsMessage = await _Channel.send({
+            content: `${_CurrentPage + 1} of ${_PageCount}`,
+            components: [_PageButtons],
+            fetchReply: true
+        })
+
+        _PageButtonCollector.on("collect", async pageButtonInteraction => {
+            _PageButtonsMessage.delete();
+    
+            let start;
+            switch(pageButtonInteraction.customId) {
+                case "pageBack":
+                    removeVisibleMessages();
+    
+                    start = _ResourceIndexes[0];
+                    _ResourceIndexes = [];
+    
+                    for(let i = start; i > start - 4; i--) {
+                        _ResourceIndexes.push(i);
+                    }
+    
+                    _ResourceIndexes.reverse();
+                    _CurrentPage--;
+    
+                    refresh()
+                    break;
+                case "pageClose":
+                    _FiltersMessage.delete();
+                    removeAllMessages();
+                    break;
+                case "pageNext":
+                    removeVisibleMessages();
+    
+                    start = _ResourceIndexes[3];
+                    _ResourceIndexes = [];
+    
+                    _CurrentPage++;
+    
+                    for(let i = start; i < start + getPageLength(); i++) {
+                        _ResourceIndexes.push(i);
+                    }
+    
+                    refresh()
+                    break;
+            }
+    
+            looseEnd(pageButtonInteraction)
+        })
+    }, 2000)
 }
 
 function CreateCollectors() {
@@ -131,12 +187,6 @@ function CreateCollectors() {
         _FilterCollector = _FiltersMessage.createMessageComponentCollector()
     }
 
-    _PageButtonCollector = _PageButtonsMessage.createMessageComponentCollector();
-
-    Collect();
-}
-
-function Collect() {
     _FilterCollector.on("collect", filterInteraction => {
         let filterType = filterInteraction.customId;
         let values = filterInteraction.values;
@@ -144,49 +194,6 @@ function Collect() {
         filter(filterType, values);
 
         looseEnd(filterInteraction)
-    })
-
-    _PageButtonCollector.on("collect", async pageButtonInteraction => {
-        _PageButtonsMessage.delete();
-
-        let start;
-        switch(pageButtonInteraction.customId) {
-            case "pageBack":
-                removeVisibleMessages();
-
-                start = _ResourceIndexes[0];
-                _ResourceIndexes = [];
-
-                for(let i = start; i > start - 4; i--) {
-                    _ResourceIndexes.push(i);
-                }
-
-                _ResourceIndexes.reverse();
-                _CurrentPage--;
-
-                refresh()
-                break;
-            case "pageClose":
-                _FiltersMessage.delete();
-                removeAllMessages();
-                break;
-            case "pageNext":
-                removeVisibleMessages();
-
-                start = _ResourceIndexes[3];
-                _ResourceIndexes = [];
-
-                _CurrentPage++;
-
-                for(let i = start; i < start + getPageLength(); i++) {
-                    _ResourceIndexes.push(i);
-                }
-
-                refresh()
-                break;
-        }
-
-        looseEnd(pageButtonInteraction)
     })
 }
 
@@ -276,9 +283,12 @@ async function getFilters() {
 }
 
 async function getMessageObjects() {
+    console.log(_Resources)
     for(let i = 0; i < _Resources.length; i++) {
         _ResourceObjs.push(await getMessageObject(_Resources[i], _HandlerType, _Database, _CallBack));
     }
+
+    console.log(_ResourceObjs)
 
     _FilterdResoucreObjs = _ResourceObjs;
 
@@ -288,6 +298,8 @@ async function getMessageObjects() {
     for(let i = 0; i < getPageLength(); i++) {
         _ResourceIndexes.push(i)
     }
+
+    console.log(_ResourceIndexes)
 }
 
 function setPageCount() {
@@ -314,7 +326,7 @@ function getPageButtons() {
         .setCustomId("pageNext")
         .setStyle(ButtonStyle.Primary)
 
-    _CurrentPage == _PageCount ? nextButton.setLabel(`>`).setDisabled(true) : nextButton.setLabel(`${_CurrentPage + 2} >`)
+    _CurrentPage + 1 == _PageCount ? nextButton.setLabel(`>`).setDisabled(true) : nextButton.setLabel(`${_CurrentPage + 2} >`)
 
     let closeButton = new ButtonBuilder()
         .setCustomId("pageClose")

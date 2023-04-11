@@ -64,7 +64,8 @@ module.exports = {
                 let collector = addResourceQuestion.createMessageComponentCollector();
 
                 collector.on('collect', addResourceInteraction => {
-                    addResource(addResourceInteraction);
+                    const aR = require("./addResource")
+                    aR.addResource(addResourceInteraction, [resourceType]);
                 })
             } catch (err) {
                 console.log(err)

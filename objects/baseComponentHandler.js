@@ -3,18 +3,18 @@ const { ButtonStyle } = require("discord.js");
 const { getLongEmbed } = require("../shared/getLongEmbed");
 const { getShortEmbed } = require("../shared/getShortEmbed")
 
-let MessageHandler;
-let Resource;
-let Database;
+let _MessageHandler;
+let _Resource;
+let _Database;
 
-let shortEmbed = true;
-let showingLinked = false;
+let _shortEmbed = true;
+let _showingLinked = false;
 
 module.exports = {
     getBaseComponetHandler(messageHandler, resource, database) {
-        MessageHandler = messageHandler;
-        Resource = resource;
-        Database = database;
+        _MessageHandler = messageHandler;
+        _Resource = resource;
+        _Database = database;
 
         return {
             getToggleButton: getToggleButton,
@@ -29,28 +29,28 @@ function getToggleButton() {
         .setStyle(ButtonStyle.Primary)
 
     return {
-        button: showingLinked 
-            ? button.setLabel(`Return to ${Resource.name}`) 
-                : shortEmbed ? button.setLabel(`View ${Resource.name} details`) 
-                    : button.setLabel(`Hide ${Resource.name} details`),
+        button: _showingLinked 
+            ? button.setLabel(`Return to ${_Resource.name}`) 
+                : _shortEmbed ? button.setLabel(`View ${_Resource.name} details`) 
+                    : button.setLabel(`Hide ${_Resource.name} details`),
         action: toggleEmbed,
         customId: "toggleEmbedSize"
     }
 }
 
 async function toggleEmbed() {
-    if(showingLinked) {
-        MessageHandler.setEmbed(await getShortEmbed(Resource, Database))
-        shortEmbed = true;
-        showingLinked = false;
+    if(_showingLinked) {
+        _MessageHandler.setEmbed(await getShortEmbed(_Resource, _Database))
+        _shortEmbed = true;
+        _showingLinked = false;
     } else {
-        if(shortEmbed) {
-            MessageHandler.setEmbed(await getLongEmbed(Resource, Database))
+        if(_shortEmbed) {
+            _MessageHandler.setEmbed(await getLongEmbed(_Resource, _Database))
         }else {
-            MessageHandler.setEmbed(await getShortEmbed(Resource, Database))
+            _MessageHandler.setEmbed(await getShortEmbed(_Resource, _Database))
         }
 
-        shortEmbed = !shortEmbed
+        _shortEmbed = !_shortEmbed
     }
 }
 

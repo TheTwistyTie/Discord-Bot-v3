@@ -20,4 +20,4 @@ module.exports = {
         ViewResources: "viewResources",
         Default: "default"
     }
-} 
+}  

@@ -13,9 +13,22 @@ module.exports = {
                 row = new ActionRowBuilder();
             }
 
-            sortedResources[resourceTypes[i].name] = resources.filter((resource) => {
+            let resourcesOfType = resources.filter((resource) => {
                 return resource.resourceTypeID == resourceTypes[i].id
             })
+
+            let finishedResources = resourcesOfType.filter((resource) => {
+                return resource.finished == true
+            })
+
+            let unfinishedResources = resourcesOfType.filter((resource) => {
+                return resource.finished == false
+            })
+
+            sortedResources[resourceTypes[i].name] = {
+                finished: finishedResources,
+                unfinished: unfinishedResources
+            }
 
             let count = sortedResources[resourceTypes[i].name].length
             if(count > 0 || canEdit) {

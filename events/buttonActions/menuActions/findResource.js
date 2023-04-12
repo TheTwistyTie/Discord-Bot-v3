@@ -1,11 +1,13 @@
 const { ButtonBuilder } = require('@discordjs/builders');
 const { ButtonStyle, ActionRowBuilder, ComponentType } = require('discord.js');
-const { addResource } = require('../../../actions/addResource');
+const { addResource, editResource } = require('../../../actions/addResource');
 const { addResourceType } = require('../../../actions/addResourceType');
-const {DatabaseTables} = require('../../../enums');
+const {DatabaseTables, ComponentHandlerType} = require('../../../enums');
 const Sequelize = require('sequelize');
 const { getResourceTypeButtons } = require('../../../shared/getResourceTypeButtons');
-const { viewResources } = require('../../../actions/viewResources');
+const { viewResources, viewSavedResources } = require('../../../actions/viewResources');
+const { getPageHandler } = require('../../../objects/pageHandler');
+const { looseEnd } = require('../../../shared/looseEnd');
 const Op = Sequelize.Op;
 
 let canEdit;
@@ -20,7 +22,7 @@ module.exports = {
         })
 
         const resources = await database.get(DatabaseTables.Resources).findAll({
-            where: {guildID: interaction.guild.id, finished: true}
+            where: {guildID: interaction.guild.id}
         });
 
 
@@ -112,7 +114,7 @@ module.exports = {
 
             let savedResources = await database.get(DatabaseTables.SavedResources).findAll({
                 where: {guildID: searchInteraction.guild.id, resourceID: {
-                    [Op.in]: filteredResourcesData.map(r => r.id)
+                    [Op.in]: filteredResourcesData.finished.map(r => r.id)
                     },
                     userID: searchInteraction.member.id
                 }
@@ -137,8 +139,17 @@ module.exports = {
                 .setLabel(`Create new ${kind}`)
                 .setStyle(ButtonStyle.Primary)
 
+            let finishButton = new ButtonBuilder()
+                .setCustomId("finishResource")
+                .setLabel("Finish Started Resource")
+                .setStyle(ButtonStyle.Success)
+
             if(canEdit) {
                 row.addComponents(addButton);
+
+                if(filteredResourcesData.unfinished.length > 0){
+                    row.addComponents(finishButton)
+                }
             }
             
             let searchMessage = await searchInteraction.reply({
@@ -160,12 +171,26 @@ module.exports = {
                         viewResources(decisionInteraction, type)
                         break;
                     case "viewSavedResources":
+                        viewSavedResources(decisionInteraction, savedResources)
                         break;
                     case "addNewResource":
                         addResource(decisionInteraction, [type])
+                        break;
+                    case "finishResource":
+                        if(filteredResourcesData.unfinished.length == 1) {
+                            editResource(filteredResourcesData.unfinished[0], decisionInteraction)
+                        } else {
+                            let pageHandler = await getPageHandler(filteredResourcesData.unfinished, decisionInteraction.channel, database, ComponentHandlerType.Select, {type: false, tags: false}, EditSelected)
+
+                            looseEnd(decisionInteraction)
+                        }
                         break;
                 }
             })
         })
     }
+}
+
+function EditSelected(value) {
+    editResource(value.resource, value.interaction)
 }

@@ -1,7 +1,9 @@
 const { ActionRowBuilder, ButtonBuilder } = require("@discordjs/builders");
 const { ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { Op } = require("sequelize");
+const { editResource } = require("../actions/addResource");
 const { DatabaseTables } = require("../enums");
+const { getLongEmbed } = require("../shared/getLongEmbed");
 const { getBaseComponetHandler } = require("./baseComponentHandler");
 
 let _MessageHandler;
@@ -216,20 +218,128 @@ function Collect() {
         } else {
             switch (collectInteraction.customId) {
                 case "saveResource":
+                    _ToggleSave(collectInteraction)
                     break;
                 case "viewParent":
+                    _ToggeleParent(collectInteraction)
                     break;
                 case "rateResource":
+                    _Rate(collectInteraction)
                     break;
                 case "seeResourceReviews":
+                    _SeeReviews(collectInteraction)
                     break;
                 case "viewChildren":
+                    _SeeChildren(collectInteraction)
                     break;
                 case "childrenSelect":
+                    _SeeChildren(collectInteraction)
                     break;
                 case "editResource":
+                    editResource(_Resource, collectInteraction)
                     break;
             }
         }
     })
+}
+
+async function _ToggleSave(interaction) {
+    let userID = interaction.user.id
+
+    let entry = await _Database.get(DatabaseTables.SavedResources).findOne({
+        where: {
+            guildID: _Resource.guildID,
+            userID: userID,
+            resourceID: _Resource.id
+        }
+    })
+
+    if(entry) {
+        let rowCount = await _Database.get(DatabaseTables.SavedResources).destroy({
+            where: {
+                guildID: _Resource.guildID,
+                userID: userID,
+                resourceID: _Resource.id
+            }
+        })
+
+        if(rowCount > 0) {
+            interaction.reply("Unsaved Successfully.")
+        } else {
+            interaction.reply("An Error has occured.")
+        }
+
+        setTimeout(() => {
+            interaction.deleteReply()
+        }, 2000)
+
+        return
+    }
+
+    entry = await _Database.get(DatabaseTables.SavedResources).create({
+        guildID: _Resource.guildID,
+        userID: userID,
+        resourceID: _Resource.id
+    })
+
+    if(entry) {
+        interaction.reply("Saved Successfully.")
+    } else {
+        interaction.reply("An Error has occured.")
+    }
+
+    setTimeout(() => {
+        interaction.deleteReply()
+    }, 2000)
+}
+
+let _ViewingParent = false;
+async function _ToggeleParent(interaction) {
+    if(_ViewingParent){
+        await _BASE.toggleEmbed()
+        return
+    }
+
+    let parentLink = await _Database.get(DatabaseTables.ResourceLinks).findOne({
+        where: {guildID: _Resource.guildID, resourceID: _Resource.id}
+    })
+
+    if(!parentLink) {
+        interaction.reply("An error has occured.")
+
+        setTimeout(() => {
+            interaction.deleteReply()
+        }, 2000)
+        return
+    }
+
+    let parent = await _Database.get(DatabaseTables._Resource).findOne({
+        where: {guildID: _Resource.guildID, id: parentLink.linkedID}
+    })
+
+    if(!parent) {
+        interaction.reply("An error has occured.")
+
+        setTimeout(() => {
+            interaction.deleteReply()
+        }, 2000)
+        return
+    }
+
+    let embed = await getLongEmbed(parent, _Database)
+
+    _MessageHandler.setEmbed(embed)
+    _BASE.setViewingLinked()
+}
+
+async function _Rate(interaction) {
+
+}
+
+async function _SeeReviews(interaction) {
+
+}
+
+async function _SeeChildren(interaction) {
+
 }

@@ -18,7 +18,9 @@ module.exports = {
 
         return {
             getToggleButton: getToggleButton,
-            createListener: createListener
+            createListener: createListener,
+            toggleEmbed: toggleEmbed,
+            setViewingLinked: setViewingLinked
         }
     }
 }
@@ -56,4 +58,8 @@ async function toggleEmbed() {
 
 function createListener(message) {
     return message.createMessageComponentCollector();
+}
+
+function setViewingLinked() {
+    _showingLinked = true
 }

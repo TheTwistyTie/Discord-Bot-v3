@@ -84,4 +84,12 @@ for(const key in client.database){
 
 const prompt = require('prompt-sync')({sigint: true});
 
+client.on('warn', (warning) => {
+    if (warning.includes('node:94')) {
+      // ignore warning 94
+      return;
+    }
+    console.warn(warning);
+});
+
 client.login(token);

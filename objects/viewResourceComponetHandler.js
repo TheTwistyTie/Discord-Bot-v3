@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const { editResource } = require("../actions/addResource");
 const { DatabaseTables } = require("../enums");
 const { getLongEmbed } = require("../shared/getLongEmbed");
+const { looseEnd } = require("../shared/looseEnd");
 const { getBaseComponetHandler } = require("./baseComponentHandler");
 
 let _MessageHandler;
@@ -342,4 +343,8 @@ async function _SeeReviews(interaction) {
 
 async function _SeeChildren(interaction) {
 
+}
+
+function GetRateButtons() {
+    
 }

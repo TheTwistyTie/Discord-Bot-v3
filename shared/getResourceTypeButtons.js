@@ -30,7 +30,7 @@ module.exports = {
                 unfinished: unfinishedResources
             }
 
-            let count = sortedResources[resourceTypes[i].name].length
+            let count = sortedResources[resourceTypes[i].name].finished.length
             if(count > 0 || canEdit) {
                 row.addComponents(
                     new ButtonBuilder()

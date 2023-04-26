@@ -180,7 +180,9 @@ module.exports = {
                         if(filteredResourcesData.unfinished.length == 1) {
                             editResource(filteredResourcesData.unfinished[0], decisionInteraction)
                         } else {
-                            let pageHandler = await getPageHandler(filteredResourcesData.unfinished, decisionInteraction.channel, database, ComponentHandlerType.Select, {type: false, tags: false}, EditSelected)
+                            let dmChannel = await decisionInteraction.user.createDM()
+
+                            let pageHandler = await getPageHandler(filteredResourcesData.unfinished, dmChannel, database, ComponentHandlerType.Select, {type: false, tags: false}, EditSelected)
 
                             looseEnd(decisionInteraction)
                         }

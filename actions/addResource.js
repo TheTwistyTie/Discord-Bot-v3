@@ -8,8 +8,9 @@ const { getResourceTypeButtons } = require("../shared/getResourceTypeButtons");
 const { looseEnd } = require("../shared/looseEnd");
 const { addResourceType } = require("./addResourceType");
 
-let MainMessage;
-let Resource;
+let _MainMessage;
+let _Resource;
+var _ResourceID;
 
 module.exports = {
     addResource(interaction, resourceTypes) {
@@ -64,6 +65,7 @@ async function addResourceToType(type, interaction) {
             name: resourceName,
             description: resourceDescription
         })
+        _ResourceID = resource.id
 
         modalInteraction.reply({
             content: `Please continue creating ${resource.name} in your Direct Messages. You can find them in the top left corner. There's a new message from me! :grin:`,
@@ -71,7 +73,7 @@ async function addResourceToType(type, interaction) {
         })
 
         spawnDirectMessage(modalInteraction, resource);
-    })
+    }).catch(err => console.log('No modal submit interaction was collected'))
 }
 
 async function getResourceType(interaction, resourceTypes) {
@@ -149,18 +151,18 @@ async function getResourceType(interaction, resourceTypes) {
 }
 
 async function spawnDirectMessage(interaction, resource) {
-    Resource = resource;
-    let formatting = Resource.finished ? "Editing" : "Creating"
+    _Resource = resource;
+    let formatting = _Resource.finished ? "Editing" : "Creating"
     let database = interaction.client.database;
 
-    MainMessage = await interaction.user.send({
-        content: `${formatting} resource ${Resource.name}`,
-        components: await getComponents(Resource, database),
-        embeds: [await getLongEmbed(Resource, database)],
+    _MainMessage = await interaction.user.send({
+        content: `${formatting} resource ${_Resource.name}`,
+        components: await getComponents(_Resource, database),
+        embeds: [await getLongEmbed(_Resource, database)],
         fetchReply: true
     })
 
-    let collector = MainMessage.createMessageComponentCollector();
+    let collector = _MainMessage.createMessageComponentCollector();
 
     collector.on('collect', async resourceEditInteraction => {
         let uniqueActionIds = [
@@ -176,7 +178,7 @@ async function spawnDirectMessage(interaction, resource) {
             let rowCount;
             switch(resourceEditInteraction.customId) {
                 case "submitResource":
-                    rowCount = await interaction.client.database.get(DatabaseTables.Resources).update({finished: true}, {where: {id: Resource.id}})
+                    rowCount = await interaction.client.database.get(DatabaseTables.Resources).update({finished: true}, {where: {id: _Resource.id}})
 
                     if(rowCount == 1) {
                         let submitMessage = await resourceEditInteraction.reply({
@@ -184,7 +186,7 @@ async function spawnDirectMessage(interaction, resource) {
                         })
 
                         interaction.deleteReply();
-                        MainMessage.delete()
+                        _MainMessage.delete()
 
                         setTimeout(() => {
                             resourceEditInteraction.deleteReply();
@@ -200,10 +202,10 @@ async function spawnDirectMessage(interaction, resource) {
                     }
                     break;
                 case "deleteResource":
-                    rowCount = await interaction.client.database.get(DatabaseTables.Resources).destroy({where: {id: Resource.id}})
+                    rowCount = await interaction.client.database.get(DatabaseTables.Resources).destroy({where: {id: _Resource.id}})
 
                     if(rowCount == 1) {
-                        MainMessage.delete()
+                        _MainMessage.delete()
 
                         let submitMessage = await resourceEditInteraction.reply({
                             content: "Deleted."
@@ -225,7 +227,7 @@ async function spawnDirectMessage(interaction, resource) {
                     }
                     break;
                 case "cancel":
-                    await MainMessage.delete()
+                    await _MainMessage.delete()
 
                     let updatedMessage = await resourceEditInteraction.editReply({
                         content: "Cancled.",
@@ -260,13 +262,13 @@ async function spawnDirectMessage(interaction, resource) {
                     }
 
                     let tageRoleOptions = await interaction.client.database.get(Table).findAll({
-                        where: {guildID: Resource.guildID}
+                        where: {guildID: _Resource.guildID}
                     })
 
                     let options = []
                     for(let i = 0; i < tageRoleOptions.length; i++ ) {
                         let whereData = {
-                            guildID: Resource.guildID
+                            guildID: _Resource.guildID
                         }
                         whereData[tableField] = tageRoleOptions[i].id
 
@@ -334,26 +336,26 @@ async function spawnDirectMessage(interaction, resource) {
                                 let value = modalInteraction.fields.getTextInputValue('addNewTagModalInput');
 
                                 let newTag = await database.get(DatabaseTables.Tags).create({
-                                    guildID: Resource.guildID,
+                                    guildID: _Resource.guildID,
                                     name: value
                                 })
 
                                 values.push(newTag.id);
 
-                                Resource = addTags(values, modalInteraction, tableField, LinkTable, Resource, MainMessage)
+                                _Resource = addTags(values, modalInteraction, tableField, LinkTable, _Resource, _MainMessage)
                             }).catch(err => {
                                 console.log('No modal submit interaction was collected')
                                 console.log(err)
                             })
                         } else {
-                            Resource = addTags(values, editResourceLinksInteraction, tableField, LinkTable, Resource, MainMessage)
+                            _Resource = addTags(values, editResourceLinksInteraction, tableField, LinkTable, _Resource, _MainMessage)
                         }
 
                         resourceEditInteraction.deleteReply()
                     })
                     break;
                 case "editResourceLinks":
-                    await linkResource(Resource, resourceEditInteraction)
+                    await linkResource(_Resource, resourceEditInteraction)
                     break;
             }
         } else {
@@ -415,7 +417,7 @@ async function spawnDirectMessage(interaction, resource) {
                     name = "open hours";
                     tableField = "openHours"
                     inputLength = TextInputStyle.Paragraph
-                    modalText = `When is ${Resource.name} open?`
+                    modalText = `When is ${_Resource.name} open?`
                     break;
                 case "setResourceEligibility":
                     name = "eligibility";
@@ -469,13 +471,14 @@ async function spawnDirectMessage(interaction, resource) {
                 let updateData= {};
                 updateData[tableField] = value;
 
-                let rowcount = await modalInteraction.client.database.get(DatabaseTables.Resources).update(updateData, { where: {id: Resource.id} })
-                Resource = await modalInteraction.client.database.get(DatabaseTables.Resources).findOne({ where: {id: Resource.id} });
+                console.log(_Resource)
+                let rowcount = await modalInteraction.client.database.get(DatabaseTables.Resources).update(updateData, { where: {id: _Resource.id} })
+                _Resource = await modalInteraction.client.database.get(DatabaseTables.Resources).findOne({ where: {id: _Resource.id} });
                 
                 if(rowcount == 1) {
                     await resourceEditInteraction.editReply({
-                        embeds: [await getLongEmbed(Resource, interaction.client.database)],
-                        components: await getComponents(Resource, database)
+                        embeds: [await getLongEmbed(_Resource, interaction.client.database)],
+                        components: await getComponents(_Resource, database)
                     })
                     
                     let modalMessage = await modalInteraction.reply({
@@ -538,7 +541,7 @@ async function linkResource(resource, resourceEditInteraction) {
         linkTypeMessage.delete()
 
         let resourceTypeName = linkTypeInteraction.customId;
-        let sortedResoruces = buttonRowsObj.sortedResources[resourceTypeName];
+        let sortedResoruces = buttonRowsObj.sortedResources[resourceTypeName].finished;
 
         looseEnd(linkTypeInteraction);
 
@@ -555,8 +558,8 @@ async function SetLink(value) {
 
     console.log("Adding to database")
     let entry = await database.get(DatabaseTables.ResourceLinks).create({
-        guildID: Resource.guildID,
-        resourceID: Resource.id,
+        guildID: _Resource.guildID,
+        resourceID: _Resource.id,
         linkedID: linkedResource.id
     })
 
@@ -597,7 +600,7 @@ async function addTags(values, editResourceLinksInteraction, tableField, LinkTab
 
         message.edit({
             embeds: [await getLongEmbed(resource, editResourceLinksInteraction.client.database)],
-            components: await getComponents(resource, database)
+            components: await getComponents(resource, editResourceLinksInteraction.client.database)
         })
 
         setTimeout(() => {

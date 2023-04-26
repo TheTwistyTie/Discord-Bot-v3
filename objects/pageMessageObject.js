@@ -4,7 +4,7 @@ const { getShortEmbed } = require("../shared/getShortEmbed");
 const { getSelectComponentHandler } = require("./selectComponentHandler");
 const { getViewResourceComponentHandler } = require("./viewResourceComponetHandler");
 
-let _Resource;
+var _Resource;
 let _ComponetHandler;
 let _Database;
 let _CallBack;
@@ -18,6 +18,9 @@ module.exports = {
         _Resource = resource;
         _Database = database;
         _CallBack = callback;
+
+        console.log("Resource created with:")
+        console.log(_Resource)
 
         Embed = await getShortEmbed(_Resource, _Database);
 
@@ -56,6 +59,8 @@ async function getTags() {
 }
 
 async function addMessage(channel) {
+    console.log("Showing resource:")
+    console.log(_Resource)
     Message = await channel.send({
         content: `${_Resource.name}:`,
         components: await _ComponetHandler.getComponets(),

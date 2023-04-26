@@ -95,32 +95,37 @@ async function showFilters() {
 }
 
 function showResourceMessages() {
-    console.log(_ResourceIndexes.length)
-    console.log(_ResourceIndexes[0])
-    console.log(_ResourceIndexes[_ResourceIndexes.length - 1])
+    console.log("Filtered resources at message spawing:")
+    console.log(_FilterdResoucreObjs)
+    console.log(`Number of resources to show: ${_ResourceIndexes.length}`)
+    console.log(`Starting at index: ${_ResourceIndexes[0]}`)
+    console.log(`Ending at index: ${_ResourceIndexes[_ResourceIndexes.length - 1]}`)
     for(let i = _ResourceIndexes[0]; i <= _ResourceIndexes[_ResourceIndexes.length - 1]; i++) {
+        console.log(`Showing resource at index ${i}`)
+        console.log(_FilterdResoucreObjs[i])
+
         _FilterdResoucreObjs[i].addMessage(_Channel);
     }
 }
 
 function removeVisibleMessages() {
-    for(let i = _ResourceIndexes[0]; i , _ResourceIndexes[_ResourceIndexes.length - 1]; i++) {
+    for(let i = _ResourceIndexes[0]; i < _ResourceIndexes[_ResourceIndexes.length - 1]; i++) {
         _FilterdResoucreObjs[i].removeMessage();
     }
 }
 
 function removeAllMessages() {
     if(_FiltersMessage) {
+        console.log("Deleting filter message.")
         _FiltersMessage.delete()
     }
 
     for(let i = 0; i < _ResourceObjs.length; i++) {
+        console.log(`Removing resource ${i}`)
         _ResourceObjs[i].removeMessage();
     }
 
-    if(_PageButtonsMessage) {
-        _PageButtonsMessage.delete()
-    }
+    _PageButtonsMessage.delete()
 }
 
 async function showPageButtons() {
@@ -136,6 +141,8 @@ async function showPageButtons() {
             components: [_PageButtons],
             fetchReply: true
         })
+
+        _PageButtonCollector = _PageButtonsMessage.createMessageComponentCollector()
 
         _PageButtonCollector.on("collect", async pageButtonInteraction => {
             _PageButtonsMessage.delete();
@@ -158,7 +165,6 @@ async function showPageButtons() {
                     refresh()
                     break;
                 case "pageClose":
-                    _FiltersMessage.delete();
                     removeAllMessages();
                     break;
                 case "pageNext":
@@ -183,18 +189,18 @@ async function showPageButtons() {
 }
 
 function CreateCollectors() {
-    if(_FiltersMessage && !_FilterCollector) {
+    if(_FiltersMessage) {
         _FilterCollector = _FiltersMessage.createMessageComponentCollector()
+
+        _FilterCollector.on("collect", filterInteraction => {
+            let filterType = filterInteraction.customId;
+            let values = filterInteraction.values;
+    
+            filter(filterType, values);
+    
+            looseEnd(filterInteraction)
+        })
     }
-
-    _FilterCollector.on("collect", filterInteraction => {
-        let filterType = filterInteraction.customId;
-        let values = filterInteraction.values;
-
-        filter(filterType, values);
-
-        looseEnd(filterInteraction)
-    })
 }
 
 async function filter(type, values) {
@@ -205,7 +211,7 @@ async function filter(type, values) {
     let currentFilter = filterType[0].Name == "role" ? _CurrentTypeFilters : filterType[0].Name == "tag" ? _CurrentTagFilters : null
     filterType[0].Name == "role" ? _CurrentTypeFilters = values : filterType[0].Name == "tag" ? _CurrentTagFilters =values : null
 
-    if(!currentFilter || currentFilter.length > 0){
+    if(currentFilter == null || currentFilter.length > 0){
         _FilterdResoucreObjs = _ResourceObjs;
     }
 
@@ -284,13 +290,13 @@ async function getFilters() {
 
 async function getMessageObjects() {
     console.log(_Resources)
-    for(let i = 0; i < _Resources.length; i++) {
-        _ResourceObjs.push(await getMessageObject(_Resources[i], _HandlerType, _Database, _CallBack));
+    for(let r of _Resources) {
+        _ResourceObjs.push(await getMessageObject(r, _HandlerType, _Database, _CallBack));
     }
 
-    console.log(_ResourceObjs)
-
     _FilterdResoucreObjs = _ResourceObjs;
+    console.log("Resource Objects:")
+    console.log(_FilterdResoucreObjs)
 
     setPageCount()
     
@@ -298,13 +304,11 @@ async function getMessageObjects() {
     for(let i = 0; i < getPageLength(); i++) {
         _ResourceIndexes.push(i)
     }
-
-    console.log(_ResourceIndexes)
+    console.log(`init indexs: ${_ResourceIndexes}`)
 }
 
 function setPageCount() {
-    _PageCount = Math.floor(_FilterdResoucreObjs.length / __PageLength);
-    _PageCount += _FilterdResoucreObjs.length % __PageLength == 0 ? 0 : 1
+    _PageCount = Math.ceil(_FilterdResoucreObjs.length / __PageLength);
 }
 
 function getPageLength() {
